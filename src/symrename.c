@@ -505,7 +505,8 @@ static int rename_symbol ( struct elf_binary_t *elf, const struct sectinfo_t *sy
  * Rename ELF symbol task
  */
 static int rename_task_in ( struct elf_binary_t *elf, const struct sectinfo_t *sym_sect,
-    const struct sectinfo_t *str_sect, const char *symbol_cur_name, const char *symbol_new_name, size_t* symbol_offset )
+    const struct sectinfo_t *str_sect, const char *symbol_cur_name, const char *symbol_new_name,
+    size_t *symbol_offset )
 {
     /* Find symbol offset */
     if ( find_symbol_offset ( elf, sym_sect, str_sect, symbol_cur_name, symbol_offset ) < 0 )
@@ -527,29 +528,31 @@ static int rename_task_in ( struct elf_binary_t *elf, const struct sectinfo_t *s
 /**
  * Rename ELF symbol task
  */
-static int rename_task ( struct elf_binary_t *elf, const char *symbol_cur_name, const char *symbol_new_name )
+static int rename_task ( struct elf_binary_t *elf, const char *symbol_cur_name,
+    const char *symbol_new_name )
 {
     int done = 0;
     size_t symbol_offset;
     struct sectinfo_t sym_sect;
     struct sectinfo_t str_sect;
 
-     /* Symbol names must be the same length */
+    /* Symbol names must be the same length */
     if ( strlen ( symbol_cur_name ) != strlen ( symbol_new_name ) )
     {
         fprintf ( stderr, "symbols (%s) and (%s) are not the same length!\n",
-            symbol_cur_name, symbol_new_name);
+            symbol_cur_name, symbol_new_name );
         return -1;
     }
-    
+
     /* Lookup symbols and strings sections */
     if ( find_section ( elf, ".symtab", &sym_sect ) >= 0
         && find_section ( elf, ".strtab", &str_sect ) >= 0 )
     {
-        if ( rename_task_in ( elf, &sym_sect, &str_sect, symbol_cur_name, symbol_new_name, &symbol_offset ) >= 0 )
+        if ( rename_task_in ( elf, &sym_sect, &str_sect, symbol_cur_name, symbol_new_name,
+                &symbol_offset ) >= 0 )
         {
-            printf ( "+%.4lu %s => %s (.symtab and .strtab)\n", (unsigned long) symbol_offset,
-                symbol_cur_name, symbol_new_name);
+            printf ( "+%.4lu %s => %s (.symtab and .strtab)\n", ( unsigned long ) symbol_offset,
+                symbol_cur_name, symbol_new_name );
             done = 1;
         }
     }
@@ -557,10 +560,11 @@ static int rename_task ( struct elf_binary_t *elf, const char *symbol_cur_name, 
     if ( find_section ( elf, ".dynsym", &sym_sect ) >= 0
         && find_section ( elf, ".dynstr", &str_sect ) >= 0 )
     {
-        if ( rename_task_in ( elf, &sym_sect, &str_sect, symbol_cur_name, symbol_new_name, &symbol_offset ) >= 0 )
+        if ( rename_task_in ( elf, &sym_sect, &str_sect, symbol_cur_name, symbol_new_name,
+                &symbol_offset ) >= 0 )
         {
-            printf ( "+%.4lu %s => %s (.dynsym and .dynstr)\n", (unsigned long) symbol_offset,
-                symbol_cur_name, symbol_new_name);
+            printf ( "+%.4lu %s => %s (.dynsym and .dynstr)\n", ( unsigned long ) symbol_offset,
+                symbol_cur_name, symbol_new_name );
             done = 1;
         }
     }
@@ -583,8 +587,8 @@ int main ( int argc, char *argv[] )
     int fd;
     int finish = 0;
     size_t len;
-    const char* begin;
-    const char* end;
+    const char *begin;
+    const char *end;
     Elf32_Ehdr *teh;
     struct elf_binary_t elf;
     const char *file_path;
@@ -598,14 +602,13 @@ int main ( int argc, char *argv[] )
     /* Check arguments count */
     if ( argc != 3 )
     {
-        fprintf ( stderr, "\n  usage: symswap elf-binary cur-name=new-name,...\n\n" );
+        fprintf ( stderr, "\n  usage: symrename elf-binary cur-name=new-name,...\n\n" );
         return 1;
     }
 
     /* Get command line arguments */
     file_path = argv[1];
     replace_tab = argv[2];
-    
 
     /* Prepare ELF binary info */
     memset ( &elf, '\0', sizeof ( elf ) );
@@ -691,45 +694,45 @@ int main ( int argc, char *argv[] )
 
     /* Rename symbols */
     begin = replace_tab;
-    while (!finish)
+    while ( !finish )
     {
-        if (!(end = strchr(begin, '=')))
+        if ( !( end = strchr ( begin, '=' ) ) )
         {
             break;
         }
-        
-        if ((len = end - begin) >= sizeof(symbol_cur_name))
+
+        if ( ( len = end - begin ) >= sizeof ( symbol_cur_name ) )
         {
             fprintf ( stderr, "symbol name near %s is too long!\n", begin );
             goto error;
         }
-        
-        memcpy(symbol_cur_name, begin, len);
+
+        memcpy ( symbol_cur_name, begin, len );
         symbol_cur_name[len] = '\0';
-    
+
         begin = end + 1;
-    
-        if (!(end = strchr(begin, ',')))
+
+        if ( !( end = strchr ( begin, ',' ) ) )
         {
-            end = replace_tab + strlen(replace_tab);
+            end = replace_tab + strlen ( replace_tab );
             finish = 1;
         }
-    
-        if ((len = end - begin) >= sizeof(symbol_cur_name))
+
+        if ( ( len = end - begin ) >= sizeof ( symbol_cur_name ) )
         {
             fprintf ( stderr, "symbol name near %s is too long!\n", begin );
             goto error;
         }
-        
-        memcpy(symbol_new_name, begin, len);
+
+        memcpy ( symbol_new_name, begin, len );
         symbol_new_name[len] = '\0';
-    
+
         if ( rename_task ( &elf, symbol_cur_name, symbol_new_name ) < 0 )
         {
             goto error;
         }
-        
-        if (!finish)
+
+        if ( !finish )
         {
             begin = end + 1;
         }
